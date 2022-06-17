@@ -16,6 +16,18 @@ public interface IEntity {
 	 */
 	public void setName(String name);
 	
+	/**
+	 * 
+	 * @return
+	 */
+	public boolean getIsActive();
+	
+	/**
+	 * 
+	 * @param status
+	 */
+	public void setIsActive(boolean status);
+	
 //	/*
 //	 * The first section of the Entity Interface is used to enable normal OOP for an Entitiy.
 //	 * This is enabled by the use of a preUpdate, update and postUpdate function.
@@ -55,13 +67,19 @@ public interface IEntity {
 	 * 
 	 * @param component
 	 */
-	public void addComponent(Object component);
+	public void addComponent(IComponent component);
 	
 	/**
 	 * 
 	 * @param components
 	 */
-	public void addComponents(Object... components);
+	public void addComponents(IComponent... components);
+	
+	/**
+	 * 
+	 * @param components
+	 */
+	public void addComponents(ArrayList<IComponent> components);
 	
 	/**
 	 * 
@@ -79,14 +97,25 @@ public interface IEntity {
 	 * 
 	 * @param component
 	 */
-	public Object getComponent(Class<?> component);
+	public IComponent getComponent(Class<?> component);
 	
+	/**
+	 * 
+	 * @param component
+	 * @return
+	 */
 	public boolean hasComponent(Class<?> component);
 	
 	/**
 	 * 
 	 * @return
 	 */
-	public ArrayList<Object> getAllComponents();
+	public ArrayList<IComponent> getAllComponents();
+	
+	/**
+	 * Creates an Copy of this Entity using all of the Components inside this Entity and copying the name
+	 * @return 
+	 */
+	public IEntity copy();
 	
 }

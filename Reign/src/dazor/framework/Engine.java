@@ -1,6 +1,7 @@
 package dazor.framework;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Stack;
 
 import dazor.api.IComponent;
@@ -11,105 +12,150 @@ import dazor.framework.classes.Entity;
 
 public class Engine implements Reign {
 	
-	private boolean isUpdating, isRunning;
+	private boolean isUpdating;
 	
 	private ArrayList<IEntity> entities;
 	private ArrayList<ISystem> systems;
 	
+	private Stack<IEntity> disabledEntities;
 	private Stack<IEntity> entityAddStack;
 	private Stack<ISystem> systemAddStack;
 	private Stack<IComponent> componentAddStack;
+	private Stack<IEntity> componentEntityAddStack;
 	
+	private Stack<IEntity> componentEntityRemoveStack;
+	private Stack<Class<ISystem>> systemRemoveStack;
+	private Stack<Class<?>> componentRemoveStack;
 	
-	private Engine() {
-		this.isUpdating = this.isRunning = false;
+	public Engine() {
+		createVariables();
+	}
+
+	public Engine(Reign reign) {
+		createVariables(); 
+		reign.getAllEntities().forEach(entity -> {
+			createEntity(entity.copy());
+		});
+		reign.getAllSystems().forEach( system -> {
+			addSystem(system.copy());
+		});
+	}
+
+	private void createVariables() {
+		this.isUpdating = false;
 		this.entityAddStack = new Stack<>();
 		this.systemAddStack = new Stack<>();
 		this.componentAddStack = new Stack<>();
+		this.componentEntityAddStack = new Stack<>();
+		this.disabledEntities = new Stack<>();
+		this.systemRemoveStack = new Stack<>();
+		this.componentEntityRemoveStack = new Stack<>();
+		this.componentRemoveStack = new Stack<>();
 		this.entities = new ArrayList<>();
 		this.systems = new ArrayList<>();
 	}
-
-	private Engine(Reign reign) {
-		this.isUpdating = this.isRunning = false;
-		this.entityAddStack = new Stack<>();
-		this.systemAddStack = new Stack<>();
-		this.componentAddStack = new Stack<>();
-		this.entities = new ArrayList<>();
-		this.systems = new ArrayList<>();
-		this.entities.addAll(reign.getAllEntities());
+	
+	@Override
+	public void createEntity(IComponent... components) {
+		if(!isUpdating) {
+			this.entities.add(new Entity(components));
+			return;
+		}
+		this.entityAddStack.push(new Entity(components));
 	}
 
 	@Override
-	public void createEntity(Object... components) {
-		entityAddStack.add(new Entity(components));
-	}
-
-	@Override
-	public void createEntity(String name, Object... components) {
-		entityAddStack.add(new Entity(name, components));
+	public void createEntity(String name, IComponent... components) {
+		if(!isUpdating) {
+			this.entities.add(new Entity(name, components));
+			return;
+		}
+		this.entityAddStack.push(new Entity(name, components));
 	}
 
 	@Override
 	public void createEntity(IEntity preFabricatedEntity) {
-		entityAddStack.add(preFabricatedEntity);
+		if(!isUpdating) {
+			this.entities.add(preFabricatedEntity);
+			return;
+		}
+		this.entityAddStack.push(preFabricatedEntity);
 	}
 
 	@Override
 	public void createEntity(String name, IEntity preFabricatedEntity) {
-		entityAddStack.add(new Entity(name, preFabricatedEntity));
+		preFabricatedEntity.setName(name);
+		if(!isUpdating) {
+			this.entities.add(preFabricatedEntity);
+			return;
+		}
+		this.entityAddStack.push(preFabricatedEntity);
 	}
 
 	@Override
-	public void createEntity(IEntity preFabricatedEntity, Object... components) {
+	public void createEntity(IEntity preFabricatedEntity, IComponent... components) {
+		preFabricatedEntity.addComponents(components);
+		if(!isUpdating) {
+			this.entities.add(preFabricatedEntity);
+			return;
+		}
+		this.entityAddStack.push(preFabricatedEntity);
+	}
+
+	@Override
+	public void createEntity(String name, IEntity preFabricatedEntity, IComponent... components) {
+		preFabricatedEntity.setName(name);
+		preFabricatedEntity.addComponents(components);
+		if(!isUpdating) {
+			this.entities.add(preFabricatedEntity);
+			return;
+		}
+		this.entityAddStack.push(preFabricatedEntity);
+	}
+
+	@Override
+	public void addComponent(IEntity entity, IComponent component) {
+		componentEntityAddStack.push(entity);
+		componentAddStack.push(component);
+	}
+
+	@Override
+	public void addComponent(int entityID, IComponent component) {
+		//TODO :(
+//		componentEntityAddStack.push(entityID);
+//		componentAddStack.push(component);
+	}
+
+	@Override
+	public void addComponents(IEntity entity, IComponent... components) {
+		for(IComponent component : components) {
+			componentEntityAddStack.push(entity);
+			componentAddStack.push(component);
+		}
+	}
+
+	@Override
+	public void addComponents(int entityID, IComponent... components) {
 		// TODO Auto-generated method stub
 		
 	}
 
 	@Override
-	public void createEntity(String name, IEntity preFabricatedEntity, Object... components) {
-		// TODO Auto-generated method stub
-		
+	public void removeComponent(IEntity entity, Class<IComponent> component) {
+		this.componentEntityRemoveStack.push(entity);
+		this.componentRemoveStack.push(component);
 	}
 
 	@Override
-	public void addComponent(IEntity iEntity, Object component) {
-		// TODO Auto-generated method stub
-		
+	public void removeComponents(IEntity entity, Class<?>... components) {
+		for(Class<?> component : components) {
+			componentEntityRemoveStack.push(entity);
+			componentRemoveStack.push(component);
+		}
 	}
 
 	@Override
-	public void addComponent(int entityID, Object component) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void addComponents(IEntity iEntity, Object... components) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void addComponents(int entityID, Object... components) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void removeComponent(IEntity iEntity, Class<?> component) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void removeComponents(IEntity iEntity, Class<?>... components) {
-		// TODO Auto-generated method stub
-		
-	}
-
-	@Override
-	public void removeComponent(int entityID, Class<?> component) {
+	public void removeComponent(int entityID, Class<IComponent> component) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -122,46 +168,48 @@ public class Engine implements Reign {
 
 	@Override
 	public void addSystem(ISystem system) {
+		if(!isUpdating) {
+			system.setEngine(this);
+			this.systems.add(system);
+		}
 		this.systemAddStack.push(system);
-	}
-	
-	@Override
-	public void removeSystem(Class<ISystem> system) {
-		// TODO Auto-generated method stub
 		
 	}
 	
 	@Override
+	public void removeSystem(Class<ISystem> system) {
+		this.systemRemoveStack.push(system);
+	}
+	
+	@Override
 	public void start() {
-		this.isRunning = true;
 		this.isUpdating = true;
 		run();
 	}
 
 	@Override
 	public void run() {
-		while(isRunning) {
-			if(isUpdating) {
-				update();
-				updateEntities();
-			}
-			handleEvents();
+		handleEvents();
+		if(isUpdating) {
+			update();
+			updateEntities();
 		}
-		dispose();
 	}
 
 	
 	public void update() {
 		
 		for(ISystem system : systems) {
-			system.update();
+			system.updateCycle();
 		}
-		
 	}
 
 	
 	public void updateEntities() {
 		
+//		for(IEntity entity : entities) {
+//			
+//		}
 		
 	}
 
@@ -172,77 +220,81 @@ public class Engine implements Reign {
 			this.entities.add(entityAddStack.pop());	
 		}
 		
-		//TODO fix :(
 		while(!this.componentAddStack.isEmpty()) {
-			componentAddStack.pop();
+			this.componentEntityAddStack.pop().addComponent(componentAddStack.pop());
 		}
 		
 		while(!this.systemAddStack.isEmpty()) {
-			this.systems.add(systemAddStack.pop());
+			ISystem system = systemAddStack.pop();
+			system.setEngine(this);
+			this.systems.add(system);
 		}
 		
-	}
-
-	public void dispose() {
-		this.entities = null;
-		System.gc();
-	}
-
-	public void save() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void load(String fileName) {
-		// TODO Auto-generated method stub
-		
-	}
-	
-	public void loadScene() {
-		// TODO Auto-generated method stub
-		
-	}
-
-	public void saveScene() {
-		// TODO Auto-generated method stub
+		for(IEntity entity : entities) {
+			if(!entity.getIsActive()) {
+				entity = null;
+				disabledEntities.push(entity);
+			}
+		}
 		
 	}
 
 	@Override
 	public ArrayList<IEntity> getAllEntities() {
-		// TODO Auto-generated method stub
 		return this.entities;
 	}
 
 	@Override
-	public ArrayList<IEntity> getEntitiesWith(Class<?> component) {
-		// TODO Auto-generated method stub
-		return null;
+	public ArrayList<IEntity> getEntitiesWith(Class<IComponent> component) {
+		ArrayList<IEntity> entitiesWithComponents = new ArrayList<IEntity>();
+		for(IEntity entity : entities) {
+			if(entity.hasComponent(component)) {
+				entitiesWithComponents.add(entity);
+			}
+		}
+		return entitiesWithComponents;
 	}
 
 
 	@Override
 	public ArrayList<IEntity> getEntitiesWith(Class<?>... components) {
-		// TODO Auto-generated method stub
-		return null;
+		ArrayList<IEntity> entitiesWithComponents = new ArrayList<IEntity>();
+		int i = 0;
+		for(IEntity entity : entities) {	
+			for(Class<?> component : components) {
+				if(!entity.hasComponent(component)) {
+					break;
+				}
+				i++;
+			}
+			if(i == components.length) {
+				entitiesWithComponents.add(entity);
+			}
+			i = 0;	
+		}
+		return entitiesWithComponents;
 	}
 
 
 	@Override
 	public IEntity getFirstEntityWith(Class<?>... components) {
+		int i = 0;	
 		for(IEntity entity : entities) {
 			for(Class<?> component : components) {
 				if(!entity.hasComponent(component)) {
-					continue;
+					break;
 				}
+				i++;
 			}
-			return entity;
+			if(i == components.length) {
+				return entity;		
+			}
 		}
 		return null;
 	}
 	
 	@Override
-	public IEntity getFirstEntityWith(Class<?> component) {
+	public IEntity getFirstEntityWith(Class<IComponent> component) {
 		for(IEntity entity : entities) {
 			if(entity.hasComponent(component)) {
 				return entity;
@@ -251,22 +303,31 @@ public class Engine implements Reign {
 		return null;
 	}
 
-	public static class Factory implements Reign.Factory {
-		
-		@Override
-		public Reign create() {
-			return new Engine();
-		}
-
-		public Reign create(Reign reign) {
-			return new Engine(reign);
-		}
-		
-	}
-g
 	@Override
-	public Reign copy() {
-		return new Engine(this);
+	public ISystem getSystem(Class<ISystem> systemType) {
+		for(ISystem system : systems) {
+			if(system.getClass() == systemType) {
+				return system;
+			}
+		}
+		return null;
+	}
+
+	@Override
+	public ArrayList<ISystem> getAllSystems() {
+		return this.systems;
+	}
+
+	@Override
+	public void addSystems(ISystem... systems) {
+		for(ISystem system : systems) {
+			this.systemAddStack.add(system);
+		}
+	}
+
+	@Override
+	public void addSystems(Collection<? extends ISystem> systems) {
+		this.systemAddStack.addAll(systems);
 	}
 	
 }

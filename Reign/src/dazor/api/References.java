@@ -10,7 +10,7 @@ import dazor.framework.Engine;
 public enum References {
 	
 	/** A refference to the default Engine the Reign is using */
-	ENGINE(Engine.class, Engine.Factory.class, "SANDBOX"),
+	ENGINE(Engine.class, "SANDBOX"),
 	
 	/** A refference to the default options the entity posses */
 	ENTITY("STEVE");
@@ -18,16 +18,12 @@ public enum References {
 	/** The class reference for the Engine*/
 	public Class<Engine> engineClass;
 	
-	/** The factory of the Engine */
-	public Class<Engine.Factory> factory;
-	
 	/** The name of the default Engine*/
 	public final String name;
 	
 	/** The Constructor for the Engine reference */
-	private References(Class<Engine> engineClass, Class<Engine.Factory> factory, String name) {
+	private References(Class<Engine> engineClass, String name) {
 		this.engineClass = engineClass;
-		this.factory = factory;
 		this.name = name;
 	}
 	
@@ -43,15 +39,7 @@ public enum References {
 	public Class<Engine> getEngine() {
 		return this.engineClass;
 	}
-	
-	/**
-	 * Function for Returning the Default factory 
-	 * @return Factory
-	 */
-	public Class<Engine.Factory> getFactory() {
-		return this.factory;
-	}
-	
+
 	/**
 	 * Function for Returning the Defualt name
 	 * @return

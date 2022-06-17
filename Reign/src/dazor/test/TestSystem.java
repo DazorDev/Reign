@@ -5,11 +5,7 @@ import dazor.api.Reign;
 
 public class TestSystem implements ISystem {
 
-	Reign e;
-	
-	public TestSystem(Reign sandbox) {
-		e = sandbox;
-	}
+	Reign engine;
 	
 	@Override
 	public void preUpdate() {
@@ -19,14 +15,23 @@ public class TestSystem implements ISystem {
 
 	@Override
 	public void update() {
-		e.createEntity(new String("kekw"));
-		System.out.println(e.getAllEntities());
+		engine.createEntity(new String("kekw"));
 	}
 
 	@Override
 	public void postUpdate() {
 		// TODO Auto-generated method stub
 		
+	}
+
+	@Override
+	public void setEngine(Reign engine) {
+		this.engine = engine;
+	}
+
+	@Override
+	public ISystem copy() {
+		return new TestSystem();
 	}
 
 	
